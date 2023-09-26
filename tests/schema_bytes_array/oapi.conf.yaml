@@ -1,0 +1,4 @@
+out_file: oapi.yaml
+indent: 2
+executable: oapi
+log_verbosity: 2
