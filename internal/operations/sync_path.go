@@ -191,8 +191,6 @@ func syncRequests(keyIdx int, n *yaml.Node, requests []Request) int {
 func syncResponses(keyIdx int, n *yaml.Node, responses []Response) int {
 	// responses
 	responsesN := maps.KV(n, "responses", maps.Present().Move(keyIdx), maps.Absent(node.Map()).Pos(keyIdx))
-	println(responsesN)
-
 	byCode := map[string][]Response{}
 	for _, r := range responses {
 		byCode[r.response] = append(byCode[r.response], r)
@@ -240,8 +238,6 @@ func syncResponses(keyIdx int, n *yaml.Node, responses []Response) int {
 
 			// responses -> {response code} -> content -> {content type} -> schema
 			schemaN := maps.KV(contentTypeN, "schema", maps.Present().Move(0), maps.Absent(node.Map()).Pos(0))
-			println(schemaN)
-
 			resps := byContentType[contentType]
 
 			if len(resps) == 0 {
