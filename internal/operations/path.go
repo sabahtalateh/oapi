@@ -142,12 +142,8 @@ func pathFunc(ctx internal.Context) (*ast.FuncDecl, *token.FileSet, error) {
 		return true
 	})
 
-	err = errors.Join(errMalformedPath, e("path should be defined over func"), errPathUsage)
-	if gDecl != nil {
-		return nil, nil, err
-	}
-	if fun == nil {
-		return nil, nil, err
+	if gDecl != nil || fun == nil {
+		return nil, nil, errors.Join(errMalformedPath, e("path should be defined over func"), errPathUsage)
 	}
 
 	return fun, fset, nil

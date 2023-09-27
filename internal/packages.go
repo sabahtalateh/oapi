@@ -25,8 +25,8 @@ type mod struct {
 }
 
 type packageInfo struct {
-	alias string
-	dir   string
+	pkgName string
+	dir     string
 }
 
 var m *mod
@@ -153,11 +153,11 @@ func readPackageName(imp string) (string, error) {
 		if len(pkg.Errors) != 0 {
 			return "", errors.Join(fmt.Errorf("malformed import: %s", imp), pkg.Errors[0])
 		}
-		m.discovered[imp] = packageInfo{alias: pkg.Name, dir: filepath.Dir(pkg.GoFiles[0])}
+		m.discovered[imp] = packageInfo{pkgName: pkg.Name, dir: filepath.Dir(pkg.GoFiles[0])}
 		return pkg.Name, nil
 	}
 
-	m.discovered[imp] = packageInfo{alias: pkgName, dir: dir}
+	m.discovered[imp] = packageInfo{pkgName: pkgName, dir: dir}
 	return pkgName, nil
 }
 
@@ -194,7 +194,7 @@ func pkgDirForImport(imp string) (string, error) {
 	if len(pkg.Errors) != 0 {
 		return "", errors.Join(fmt.Errorf("malformed import: %s", imp), pkg.Errors[0])
 	}
-	m.discovered[imp] = packageInfo{alias: pkg.Name, dir: filepath.Dir(pkg.GoFiles[0])}
+	m.discovered[imp] = packageInfo{pkgName: pkg.Name, dir: filepath.Dir(pkg.GoFiles[0])}
 	return filepath.Dir(pkg.GoFiles[0]), nil
 }
 
