@@ -6,7 +6,6 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"path/filepath"
 	"strings"
 
 	"github.com/sabahtalateh/oapi/internal"
@@ -144,52 +143,17 @@ func typeToRef(ctx internal.Context, fieldName string, t ast.Expr) (string, erro
 	case *ast.SelectorExpr:
 		switch alias := tt.X.(type) {
 		case *ast.Ident:
-			imp, err := findImportPath(ctx, fieldName, alias.Name)
+			impDir, err := internal.ImportDir(ctx, alias.Name)
 			if err != nil {
 				return "", err
 			}
-			pkgPath, err := internal.PkgDirForImport(ctx.Location, imp)
-			if err != nil {
-				return "", err
-			}
-			return schemaNameForType(ctx, pkgPath, tt.Sel.Name)
+			return schemaNameForType(ctx, impDir, tt.Sel.Name)
 		default:
 			return "", fmt.Errorf("unsupported type for property: %s", fieldName)
 		}
 	default:
 		return "", fmt.Errorf("unsupported type for property: %s", fieldName)
 	}
-}
-
-func findImportPath(ctx internal.Context, fieldName string, alias string) (string, error) {
-	// suppose package dir equals to last package element (dir: c; package a/b/c)
-	for _, imp := range ctx.Imports {
-		val := impV(imp.Path.Value)
-
-		if imp.Name != nil && imp.Name.Name == alias {
-			return val, nil
-		}
-
-		if filepath.Base(val) == alias {
-			return val, nil
-		}
-	}
-
-	// if dir not equals to last package element (dir d; package a/b/c)
-	// then read ".go" file from dir to read actual package
-	for _, imp := range ctx.Imports {
-		val := impV(imp.Path.Value)
-
-		readAlias, err := internal.ReadPackageName(ctx.Location, val)
-		if err != nil {
-			return "", err
-		}
-
-		if readAlias == alias {
-			return val, nil
-		}
-	}
-	return "", fmt.Errorf("unsupported type for property: %s", fieldName)
 }
 
 func schemaNameForType(ctx internal.Context, path string, Type string) (string, error) {
@@ -274,19 +238,11 @@ func isStdTime(sel *ast.SelectorExpr, imps []*ast.ImportSpec) bool {
 	switch sel.X.(type) {
 	case *ast.Ident:
 		for _, imp := range imps {
-			val := impV(imp.Path.Value)
+			val := internal.UnquoteImport(imp.Path.Value)
 			if val == "time" && sel.Sel.Name == "Time" {
 				return true
 			}
 		}
 	}
 	return false
-}
-
-func impV(imp string) string {
-	v := strings.Trim(imp, "\"")
-	v = strings.Trim(v, "'")
-	v = strings.Trim(v, "`")
-
-	return v
 }

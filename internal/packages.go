@@ -14,6 +14,10 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
+var (
+	ErrImportDirNotFound = errors.New("import directory not found")
+)
+
 type mod struct {
 	root       string
 	modFile    *modfile.File
@@ -27,14 +31,14 @@ type packageInfo struct {
 
 var m *mod
 
-func findMod(dir string) (*mod, error) {
+func initMod(dir string) (*mod, error) {
 	if dir == "/" || dir == "." || dir == "" {
 		return nil, fmt.Errorf("file should reside within module. (go mod init ..)")
 	}
 
 	bb, err := os.ReadFile(filepath.Join(dir, "go.mod"))
 	if os.IsNotExist(err) {
-		return findMod(filepath.Dir(dir))
+		return initMod(filepath.Dir(dir))
 	}
 	if err != nil {
 		return nil, err
@@ -48,17 +52,53 @@ func findMod(dir string) (*mod, error) {
 	return &mod{root: dir, modFile: modF, discovered: map[string]packageInfo{}}, nil
 }
 
-func ReadPackageName(l Location, imp string) (string, error) {
+func ImportDir(ctx Context, alias string) (string, error) {
 	var err error
 
 	if m == nil {
-		m, err = findMod(filepath.Dir(l.File))
+		m, err = initMod(filepath.Dir(ctx.WorkDir))
 		if err != nil {
 			return "", err
 		}
 	}
 
-	var dir string
+	// suppose package dir equals to last package element (dir: c; package a/b/c)
+	for _, imp := range ctx.Imports {
+		val := UnquoteImport(imp.Path.Value)
+
+		if imp.Name != nil && imp.Name.Name == alias {
+			return pkgDirForImport(val)
+		}
+
+		if filepath.Base(val) == alias {
+			return pkgDirForImport(val)
+		}
+	}
+
+	// if dir not equals to last package element (dir d; package a/b/c)
+	// then read ".go" file from dir to read actual package
+	for _, imp := range ctx.Imports {
+		val := UnquoteImport(imp.Path.Value)
+
+		pkgName, err := readPackageName(val)
+		if err != nil {
+			return "", err
+		}
+
+		if pkgName == alias {
+			return pkgDirForImport(val)
+		}
+	}
+
+	return "", errors.Join(ErrImportDirNotFound, errors.New(alias))
+}
+
+func readPackageName(imp string) (string, error) {
+	var (
+		err error
+		dir string
+	)
+
 	if strings.HasPrefix(imp, m.modFile.Module.Mod.Path) {
 		dir = strings.Replace(imp, m.modFile.Module.Mod.Path, m.root, 1)
 	} else {
@@ -121,14 +161,11 @@ func ReadPackageName(l Location, imp string) (string, error) {
 	return pkgName, nil
 }
 
-func PkgDirForImport(l Location, imp string) (string, error) {
+func pkgDirForImport(imp string) (string, error) {
 	var err error
 
-	if m == nil {
-		m, err = findMod(filepath.Dir(l.File))
-		if err != nil {
-			return "", err
-		}
+	if strings.HasPrefix(imp, m.modFile.Module.Mod.Path) {
+		return strings.Replace(imp, m.modFile.Module.Mod.Path, m.root, 1), nil
 	}
 
 	if d, ok := m.discovered[imp]; ok {
@@ -137,12 +174,12 @@ func PkgDirForImport(l Location, imp string) (string, error) {
 
 	for _, req := range m.modFile.Require {
 		if strings.HasPrefix(imp, req.Mod.Path) {
-			pkgPath := filepath.Join(m.root, "vendor", req.Mod.Path)
-			_, err = os.Stat(pkgPath)
+			pkgDir := filepath.Join(m.root, "vendor", req.Mod.Path)
+			_, err = os.Stat(pkgDir)
 			if os.IsNotExist(err) {
-				return "", fmt.Errorf("vendor dir may be outdated. try run `go mod vendor`")
+				break
 			}
-			return pkgPath, nil
+			return pkgDir, nil
 		}
 	}
 
@@ -159,4 +196,12 @@ func PkgDirForImport(l Location, imp string) (string, error) {
 	}
 	m.discovered[imp] = packageInfo{alias: pkg.Name, dir: filepath.Dir(pkg.GoFiles[0])}
 	return filepath.Dir(pkg.GoFiles[0]), nil
+}
+
+func UnquoteImport(imp string) string {
+	v := strings.Trim(imp, "\"")
+	v = strings.Trim(v, "'")
+	v = strings.Trim(v, "`")
+
+	return v
 }
