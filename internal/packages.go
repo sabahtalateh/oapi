@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	ErrImportDirNotFound = errors.New("import directory not found")
+	ErrImportDirNotFound = errors.New("directory for import not found")
 )
 
 type mod struct {
@@ -56,7 +56,7 @@ func ImportDir(ctx Context, alias string) (string, error) {
 	var err error
 
 	if m == nil {
-		m, err = initMod(filepath.Dir(ctx.WorkDir))
+		m, err = initMod(ctx.WorkDir)
 		if err != nil {
 			return "", err
 		}
