@@ -1,6 +1,8 @@
 package node
 
-import "gopkg.in/yaml.v3"
+import (
+	"gopkg.in/yaml.v3"
+)
 
 func Scalar(v any) *yaml.Node {
 	switch vv := v.(type) {

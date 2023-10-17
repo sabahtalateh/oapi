@@ -1,9 +1,11 @@
 package path_added
 
 import (
-	"github.com/sabahtalateh/oapi/tests"
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/sabahtalateh/oapi/tests"
 )
 
 //go:generate oapi path TAKE /hello

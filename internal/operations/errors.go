@@ -1,6 +1,8 @@
 package operations
 
-import "errors"
+import (
+	"errors"
+)
 
 const responseUsage = `usage: on func. together with ` + "`" + `go:generate oapi path ..` + "`" + `
 //go:generate oapi response {HTTP Code | default} {Content-Type (can be omitted, default is applications/json)} {Schema Name}

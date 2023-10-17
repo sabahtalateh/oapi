@@ -1,6 +1,8 @@
 package seqs
 
-import "gopkg.in/yaml.v3"
+import (
+	"gopkg.in/yaml.v3"
+)
 
 func Insert(seq *yaml.Node, i int, ins *yaml.Node) {
 	if seq.Kind != yaml.SequenceNode {

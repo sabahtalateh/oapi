@@ -1,9 +1,10 @@
 package path_added
 
 import (
-	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/sabahtalateh/oapi/tests"
 )

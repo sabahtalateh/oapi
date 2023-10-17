@@ -12,7 +12,7 @@ func main() {
 	wd, err := os.Getwd()
 	check(err)
 
-	c, err := internal.ReadConfig(wd)
+	c, err := internal.FindConfig(wd)
 	check(err)
 
 	l, err := internal.Loc(wd)

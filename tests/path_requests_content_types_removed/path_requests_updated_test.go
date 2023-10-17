@@ -1,8 +1,9 @@
 package path_replaced
 
 import (
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/sabahtalateh/oapi/tests"
 )

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	mod2 "github.com/sabahtalateh/mod"
 	"gopkg.in/yaml.v3"
 )
 
@@ -26,11 +27,11 @@ type Config struct {
 	LogVerbosity int    `yaml:"log_verbosity"`
 }
 
-var defaultC = Config{
+var defaultConf = Config{
 	OutFile:      "oapi/oapi.yaml",
 	Executable:   "oapi",
 	Indent:       2,
-	LogVerbosity: Verb1,
+	LogVerbosity: Verb3,
 }
 
 func isModRoot(dir string) bool {
@@ -39,61 +40,69 @@ func isModRoot(dir string) bool {
 }
 
 // returns found file & dir where it was found
-func findConfigFile(dir string) (*os.File, string, error) {
+func findConfig(dir, prevDir string, first bool) (*os.File, string, error) {
+	if !first && dir == prevDir {
+		return nil, "", os.ErrNotExist
+	}
+
 	path := filepath.Join(dir, confFileName)
 	f, err := os.Open(path)
 	if os.IsNotExist(err) {
 		if isModRoot(dir) {
-			return nil, dir, nil
+			return nil, "", os.ErrNotExist
 		}
-
-		dir = filepath.Dir(dir)
-		if dir == "/" || dir == "." {
-			return nil, "", fmt.Errorf("%s not found", confFileName)
-		}
-
-		return findConfigFile(dir)
+		return findConfig(filepath.Dir(dir), dir, false)
+	}
+	if err != nil {
+		return nil, "", err
 	}
 	return f, dir, nil
 }
 
-func ReadConfig(wd string) (Config, error) {
-	var err error
+func FindConfig(wd string) (Config, error) {
+	var (
+		conf Config
+		err  error
+	)
 
-	confFile, dir, err := findConfigFile(wd)
+	confFile, confDir, err := findConfig(wd, wd, true)
 	if err != nil {
-		return defaultC, err
-	}
-
-	var c Config
-	err = yaml.NewDecoder(confFile).Decode(&c)
-	if err != nil {
-		return c, errors.Join(err, fmt.Errorf("malformed config: %s", filepath.Join(dir, confFileName)))
+		conf = defaultConf
+		goModPath, err := mod2.ModFilePath(wd)
+		if err != nil {
+			return conf, fmt.Errorf("not resides within module: %s", wd)
+		}
+		confDir = filepath.Dir(goModPath)
+	} else {
+		err = yaml.NewDecoder(confFile).Decode(&conf)
+		if err != nil {
+			return conf, errors.Join(err, fmt.Errorf("malformed config: %s", filepath.Join(confDir, confFileName)))
+		}
 	}
 
 	// set defaults
-	if c.OutFile == "" {
-		c.OutFile = defaultC.OutFile
+	if conf.OutFile == "" {
+		conf.OutFile = defaultConf.OutFile
 	}
-	if c.Executable == "" {
-		c.Executable = defaultC.Executable
+	if conf.Executable == "" {
+		conf.Executable = defaultConf.Executable
 	}
-	if c.Indent == 0 {
-		c.Indent = defaultC.Indent
+	if conf.Indent == 0 {
+		conf.Indent = defaultConf.Indent
 	}
-	if c.Indent == 0 {
-		c.Indent = defaultC.Indent
+	if conf.Indent == 0 {
+		conf.Indent = defaultConf.Indent
 	}
-	if c.LogVerbosity == 0 {
-		c.LogVerbosity = defaultC.LogVerbosity
+	if conf.LogVerbosity == 0 {
+		conf.LogVerbosity = defaultConf.LogVerbosity
 	}
 
-	if !filepath.IsAbs(c.OutFile) {
-		c.OutFile, err = filepath.Abs(filepath.Join(dir, c.OutFile))
+	if !filepath.IsAbs(conf.OutFile) {
+		conf.OutFile, err = filepath.Abs(filepath.Join(confDir, conf.OutFile))
 		if err != nil {
 			return Config{}, err
 		}
 	}
 
-	return c, nil
+	return conf, nil
 }

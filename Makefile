@@ -1,5 +1,8 @@
 RICHGO := $(shell which richgo 2>/dev/null)
 
+imports:
+	importblocks ./...
+
 test:
 	go clean -testcache
 	go test ./tests/...
