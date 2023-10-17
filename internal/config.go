@@ -68,7 +68,7 @@ func ReadConfig(wd string) (Config, error) {
 	var c Config
 	err = yaml.NewDecoder(confFile).Decode(&c)
 	if err != nil {
-		return c, errors.Join(err, fmt.Errorf("malformed Config: %s", filepath.Join(dir, confFileName)))
+		return c, errors.Join(err, fmt.Errorf("malformed config: %s", filepath.Join(dir, confFileName)))
 	}
 
 	// set defaults
