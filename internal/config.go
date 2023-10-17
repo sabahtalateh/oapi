@@ -27,10 +27,10 @@ type Config struct {
 }
 
 var defaultC = Config{
-	OutFile:      "oapi/api.yaml",
+	OutFile:      "oapi/oapi.yaml",
 	Executable:   "oapi",
 	Indent:       2,
-	LogVerbosity: Verb2,
+	LogVerbosity: Verb1,
 }
 
 func isModRoot(dir string) bool {
