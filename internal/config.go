@@ -31,7 +31,7 @@ var defaultConf = Config{
 	OutFile:      "oapi/oapi.yaml",
 	Executable:   "oapi",
 	Indent:       2,
-	LogVerbosity: Verb3,
+	LogVerbosity: Verb1,
 }
 
 func isModRoot(dir string) bool {
